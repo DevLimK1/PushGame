@@ -9,7 +9,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Random;
+import java.util.Timer;
 
 import javax.imageio.ImageIO;
 
@@ -23,15 +28,16 @@ import game.item.Santa;
 import game.item.Snow;
 import game.item.Sun;
 
-public class FightCanvas extends Canvas {// 같은 PC에서 2P
+public class OnlineCanvas extends Canvas {
 	private Random random;
 
 	private Image img;
 	private Image gameOverImg;
 	private Image[] numImg;
 
-	private static FightCanvas fightCanvas;
-	private static IntroCanvas introCanvas;
+	private static OnlineCanvas onlineCanvas;
+	private ServerSocket serverSocket;
+	public static Socket c_socket;
 
 	private Movable[] items;
 
@@ -49,31 +55,30 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 	private int fx, fy; // 카운트 앞자리 수
 	private int bx, by; // 카운트 뒷자리 수
 
-	private final int P1PUSH = 83;
-	private final int P2PUSH = 40;
-
+	private int result;
 	private int max;
 	private int santaCnt;// 산타 랜덤 출현 카운트
 	private int olafCnt; // 올라프 랜덤 출현 카운트
 	private int presentCnt;// 선물 랜덤 출현 카운트
 	private int snowCnt; // 눈 랜덤 출현 카운트
-	private int count;
 
 	private int unitIndex = 0;
 	private static boolean isStop;
 
-	public FightCanvas() {
+	public OnlineCanvas() {
 		random = new Random();
 
 		isStop = true;
 
-		fightCanvas = this;
+		onlineCanvas = this;
 
 		numImg = new Image[10]; // 카운트다운 숫자 이미지 배열 10개 선언
 
 		items = new Movable[100];
 
 		max = 100;
+
+		result = 0; // 소켓 상대방한테 보낼 key값
 
 		fx = 640;
 		fy = 650;
@@ -96,15 +101,16 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 
 			gameOverImg = ImageIO.read(new File("res/images/GameOver2.png"));
 		} catch (IOException e1) {
+			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
 		background = new Background();
-		sun = new Sun();
 		iceBerg = new IceBerg(); // 객체 생성 순서 중요함!!
+		sun = new Sun();
 		character = new Character();
-		// Character가 먼저 객체 생성한 후 빙산을 객체 생성하면 캐릭터들이 그냥 지나치게 됨
 		backButton = new BackButton();
+		// Character가 먼저 객체 생성한 후 빙산을 객체 생성하면 캐릭터들이 그냥 지나치게 됨
 
 		santaCnt = 200; // 산타 출현 카운트다운
 		olafCnt = 200; // 올라프 출현 카운트다운
@@ -117,85 +123,99 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 		items[unitIndex++] = sun; // 해
 		items[unitIndex++] = backButton;
 
-		new Thread(new Runnable() { // 시간 초 쓰레드
+		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					while (isStop) {
-						backTime--;
-
-						if (backTime == -1) { // 시간 카운트 뒷숫자
-							backTime = 9;
-							frontTime--;
-							if (frontTime == -1)
-								frontTime = 0;
-						}
-						if (backTime == 0 && frontTime == 0) { // 시간 초가 0초되면 캐릭터 멈춤
-							isStop = false;
-							character.bearsStop();
-						}
-						Thread.sleep(1000);
+					serverSocket = new ServerSocket(8888);
+					// 서버
+					c_socket = serverSocket.accept();
+					if (c_socket != null) {
+						Timer();
+						System.out.println("상대방 접속완료");
 					}
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
+
+					// 접속자가 등장 함.
+//리시브 스레드
+					new Thread(new Runnable() {
+						// server player1
+						@Override
+						public void run() {
+							while (true) {
+								int value;
+								try {
+
+									InputStream is = c_socket.getInputStream();
+									value = is.read();
+									if (value == 32) {
+										character.bearR_moveLeft();
+										character.bearR_back();
+									} else if (value == 39)
+										character.bearR_moveRight();
+									character.bearR_back();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+						}
+					}).start();
+
+					if (c_socket != null)
+						System.out.println("클라이언트가 접속했습니다.");
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-		}).start();
+		}
+
+		).start();
+
+		
 
 		this.addKeyListener(new KeyAdapter() {
+
 			@Override
-			public void keyReleased(KeyEvent e) {
-				int result = e.getKeyCode();
+			public void keyPressed(KeyEvent e) {
+				result = e.getKeyCode();
+
+				try {
+					OutputStream os = c_socket.getOutputStream();
+					os.write(result);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 
 				switch (result) {
-				case KeyEvent.VK_LEFT: {// 방향키 좌
-					character.bearR_moveLeft();
-					character.bearR_back();
-					break;
-				}
-				case KeyEvent.VK_RIGHT: {// 방향키 우
-					character.bearR_moveRight();
-					character.bearR_front();
-					break;
-				}
-				case 65: {// A키 p1 왼쪽이동
-					character.bearL_moveLeft();
-					character.bearL_back();
-					break;
-				}
-				case 68: {// D키 p1 오른쪽 이동
+				case KeyEvent.VK_SPACE: { // 좌측 곰 오른쪽 이동
 					character.bearL_moveRight();
 					character.bearL_front();
 					break;
 				}
-				case P1PUSH: {// 1p 밀기 보조키
-					character.bearL_moveRight();
+				case KeyEvent.VK_LEFT: { // 좌측 곰 왼쪽 이동
+					character.bearL_moveLeft();
+					character.bearL_back();
 					break;
 				}
-				case P2PUSH: {
-					character.bearR_moveLeft();
-					break;
-				}
-				} // end switch
-			} // end keyPressed
+
+				}// end switch
+			}
 		});
 
 		this.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseReleased(MouseEvent e) {
+			public void mouseClicked(MouseEvent e) {
 
 				int x = e.getX();
 				int y = e.getY();
-				
-				if ((backButton.contains(x, y))&&(x > 1350 && x < 1416) && (y > 650 && y < 712)) {
-					GameFrame.getInstance().changeCanvas(5);
+				if ((backButton.contains(x, y)) && (x > 1350 && x < 1416) && (y > 650 && y < 712))// 뒤로가기 버튼
+				{
+					GameFrame.getInstance().changeCanvas(6);
 					GameFrame.music.wooStop();
 				}
 			}
 		});
-		
+
 		this.addMouseMotionListener(new MouseAdapter() {
 
 			@Override
@@ -207,14 +227,45 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 					GameFrame.music.ahStart();
 				} else {
 					sun.contain = false;
-					
+
 				}
 
 			}
 
 		});
 
-	} // end public FightCanvas()
+	}
+
+	public void Timer() {
+		new Thread(new Runnable() { // 시간 초 쓰레드
+
+			@Override
+			public void run() {
+				try {
+					while (isStop) {
+						if (c_socket != null) {
+							backTime--;
+
+							if (backTime == -1) { // 시간 카운트 뒷숫자
+								backTime = 9;
+								frontTime--;
+								if (frontTime == -1)
+									frontTime = 0;
+							}
+							if (backTime == 0 && frontTime == 0) { // 시간 초가 0초되면 캐릭터 멈춤
+								isStop = false;
+								character.bearsStop();
+							}
+							Thread.sleep(1000);
+						}
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+
+	}
 
 	public void start() {
 
@@ -222,9 +273,11 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 
 			@Override
 			public void run() {
+				// TODO Auto-generated method stub
 				while (true) {
 					moveUpdate(); // 단위벡터 단위로 움직임
-					fightCanvas.repaint();
+					onlineCanvas.repaint();
+
 					try {
 						Thread.sleep(17);
 					} catch (InterruptedException e) {
@@ -261,15 +314,13 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 
 			santaCnt = 500;
 
-		} // ~end if
+		} // end if
 
 		if (--presentCnt == 0) { // 선물카운트가 0이면 선물 투척
 
 			items[unitIndex++] = santa.throwPresent(); // 산타가 선물 투척
 
-//			presentCnt = random.nextInt(400) + 200;
 			presentCnt = 400;
-			
 		}
 
 		if (--olafCnt == 0) { // 올라프카운트가 0이면 올라프 생성
@@ -285,41 +336,35 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 			items[unitIndex++] = olaf.throwSnow(); // 산타가 선물 투척
 
 			if (frontTime == 2) {
-				snowCnt = random.nextInt(100) + 50;
+				snowCnt = 100;
 			} else if (frontTime == 1) {
-				snowCnt = random.nextInt(50) + 20;
+				snowCnt = 50;
 			} else {
-				snowCnt = random.nextInt(50) + 1;
+				snowCnt = 30;
 			}
-			
-
 		}
 
 	}
 
 	@Override
-	public void update(Graphics g) { // 화면 지우기
+	public void update(Graphics g) {
 		paint(g);
+
 	}
 
 	@Override
 	public void paint(Graphics g) {
-		Image buf = createImage(this.getWidth(), this.getHeight()); // 더블 버퍼링 구현
+		Image buf = createImage(this.getWidth(), this.getHeight());
 		Graphics gg = buf.getGraphics();
 
-		for (int i = 0; i < unitIndex; i++) {
+		for (int i = 0; i < unitIndex; i++)
 			items[i].draw(gg);
-		}
 
-		System.out.println("backTime: " + backTime);
-		System.out.println("frontTime: " + frontTime);
-		System.out.println("isStop: " + isStop);
-		
-		gg.drawImage(numImg[backTime], bx, by, FightCanvas.getInstacne()); // 카운트 다운 뒤에 숫자
-		gg.drawImage(numImg[frontTime], fx, fy, FightCanvas.getInstacne()); // 카운트 다운 앞에 숫자
+		gg.drawImage(numImg[backTime], bx, by, OnlineCanvas.getInstacne()); // 카운트 다운 뒤에 숫자
+		gg.drawImage(numImg[frontTime], fx, fy, OnlineCanvas.getInstacne()); // 카운트 다운 앞에 숫자
 
 		if ((backTime == 0 && frontTime == 0) || Character.isBearDrop()) { // 시간 초 끝나면 GameOver이미지 출력
-			gg.drawImage(gameOverImg, 400, 100, FightCanvas.getInstacne()); // 카운트 다운 00 되면 gameover화면 나옴
+			gg.drawImage(gameOverImg, 400, 100, OnlineCanvas.getInstacne()); // 카운트 다운 00 되면 gameover화면 나옴
 			isStop = false;
 			backTime = 0;
 			frontTime = 0;
@@ -329,12 +374,7 @@ public class FightCanvas extends Canvas {// 같은 PC에서 2P
 
 	}
 
-	public static FightCanvas getInstacne() {
-		return fightCanvas;
+	public static OnlineCanvas getInstacne() {
+		return onlineCanvas;
 	}
-
-	public static IntroCanvas getInstance() {
-		return introCanvas;
-	}
-
 }

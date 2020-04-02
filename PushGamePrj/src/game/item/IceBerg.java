@@ -24,6 +24,7 @@ public class IceBerg implements Movable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} // 빙산 이미지
+		
 	}
 	
 	public IceBerg() {
@@ -42,11 +43,10 @@ public class IceBerg implements Movable {
 		return iceBergX;
 	}
 
-
-	public void setIceBergX(int iceBergX) {
-		this.iceBergX = iceBergX;
+	public int getIceBergY() {
+		return iceBergY;
 	}
-	
+
 	public void plusIceBergX(int vx) {
 		this.iceBergX+=vx;
 	}
@@ -55,9 +55,6 @@ public class IceBerg implements Movable {
 		this.iceBergX-=vx;
 	}
 
-	public int getIceBergY() {
-		return iceBergY;
-	}
 
 	@Override
 	public void update() {
@@ -69,7 +66,7 @@ public class IceBerg implements Movable {
 	public void draw(Graphics g) {
 		
 		/* +++++++++++ 빙산 이미지 그리기 +++++++++++++ */
-		System.out.println("iceBergX: "+iceBergX);
+//		System.out.println("iceBergX: "+iceBergX);
 		int offsetX = 183 / 2; // 빙산 이미지의 x축 중심점 이동위해서 선언
 		int offsetY = 400 / 2; // 빙산 이미지의 y축 중심점 이동위해서 선언
 
