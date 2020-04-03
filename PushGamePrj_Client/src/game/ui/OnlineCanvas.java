@@ -115,7 +115,8 @@ public class OnlineCanvas extends Canvas {
 		santaCnt = 200; // 산타 출현 카운트다운
 		olafCnt = 200; // 올라프 출현 카운트다운
 		presentCnt = random.nextInt(200) + 250;// 선물 출현 카운트다운
-		snowCnt = random.nextInt(100) + 250; // 눈 출현 카운트다운
+		snowCnt=200;
+//		snowCnt = random.nextInt(100) + 250; // 눈 출현 카운트다운
 
 		items[unitIndex++] = background; // 배경
 		items[unitIndex++] = character; // 곰 캐릭터
@@ -126,7 +127,8 @@ public class OnlineCanvas extends Canvas {
 		new Thread(new Runnable() {
 			public void run() {
 				try {
-					clientSocket = new Socket("192.168.0.44", 8888);//클라이언트
+					clientSocket = new Socket("192.168.0.12", 8888);//클라이언트
+//					clientSocket = new Socket("192.168.2.16", 8888);//클라이언트
 					// 클라이언트
 				} catch (SocketException e) {
 					e.printStackTrace();
