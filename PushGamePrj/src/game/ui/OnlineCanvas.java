@@ -28,7 +28,7 @@ import game.item.Santa;
 import game.item.Snow;
 import game.item.Sun;
 
-public class OnlineCanvas extends Canvas {
+public class OnlineCanvas extends Canvas {//서버
 	private Random random;
 
 	private Image img;
@@ -61,7 +61,7 @@ public class OnlineCanvas extends Canvas {
 	private int olafCnt; // 올라프 랜덤 출현 카운트
 	private int presentCnt;// 선물 랜덤 출현 카운트
 	private int snowCnt; // 눈 랜덤 출현 카운트
-
+	private int olafInitCnt;
 	private int unitIndex = 0;
 	private static boolean isStop;
 
@@ -75,7 +75,7 @@ public class OnlineCanvas extends Canvas {
 		numImg = new Image[10]; // 카운트다운 숫자 이미지 배열 10개 선언
 
 		items = new Movable[100];
-
+		 olafInitCnt=0;
 		max = 100;
 
 		result = 0; // 소켓 상대방한테 보낼 key값
@@ -113,9 +113,11 @@ public class OnlineCanvas extends Canvas {
 		// Character가 먼저 객체 생성한 후 빙산을 객체 생성하면 캐릭터들이 그냥 지나치게 됨
 
 		santaCnt = 200; // 산타 출현 카운트다운
-		olafCnt = 200; // 올라프 출현 카운트다운
+//		if(c_socket!=null) {
+//			olafCnt = 200; // 올라프 출현 카운트다운	
+//		}
 		presentCnt = random.nextInt(200) + 250;// 선물 출현 카운트다운
-		snowCnt = random.nextInt(100) + 250; // 눈 출현 카운트다운
+//		snowCnt = random.nextInt(100) + 250; // 눈 출현 카운트다운
 
 		items[unitIndex++] = background; // 배경
 		items[unitIndex++] = character; // 곰 캐릭터
@@ -323,24 +325,36 @@ public class OnlineCanvas extends Canvas {
 			presentCnt = 400;
 		}
 
-		if (--olafCnt == 0) { // 올라프카운트가 0이면 올라프 생성
-			olaf = new Olaf(); // 반복적으로 올라프 생성
+		
+		if (c_socket != null) {
+			olafInitCnt++;
+			if(olafInitCnt==1) {
+				olafCnt=200;
+				snowCnt=200;
+			}
+			
+//			System.out.println("olafCnt:"+olafInitCnt);
+//			System.out.println("snowCnt:"+snowCnt);
+			
+			if (--olafCnt == 0) { // 올라프카운트가 0이면 올라프 생성
+				olaf = new Olaf(); // 반복적으로 올라프 생성
 
-			items[unitIndex++] = olaf;
+				items[unitIndex++] = olaf;
 
-			olafCnt = 300;
-		}
+				olafCnt = 300;
+			}
 
-		if (--snowCnt == 0) { // 선물카운트가 0이면 선물 투척
+			if (--snowCnt == 0) { // 선물카운트가 0이면 선물 투척
 
-			items[unitIndex++] = olaf.throwSnow(); // 산타가 선물 투척
+				items[unitIndex++] = olaf.throwSnow(); // 산타가 선물 투척
 
-			if (frontTime == 2) {
-				snowCnt = 100;
-			} else if (frontTime == 1) {
-				snowCnt = 50;
-			} else {
-				snowCnt = 30;
+				if (frontTime == 2) {
+					snowCnt = 100;
+				} else if (frontTime == 1) {
+					snowCnt = 50;
+				} else {
+					snowCnt = 30;
+				}
 			}
 		}
 
