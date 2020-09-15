@@ -1,8 +1,16 @@
-[TOC]
-
 # 👨🏻‍🤝‍👨🏻Team Project
 
+#### [목차]
 
+[🐻PushBear Game🐼](#🐻PushBear Game🐼)
+
+🙋‍♂️[팀원 소개 및 역할](#%EF%B8%8F팀원-소개-및-역할)
+
+[프로젝트 환경](#프로젝트-환경)
+
+[기술 스택](#기술-스택)
+
+[프로젝트 회고](#프로젝트-회고)
 
 # 🐻PushBear Game🐼
 
@@ -87,9 +95,7 @@
 
 # 기술 스택
 
-- **Programming Language :** java , awt
-
-
+- **Programming Language :** java
 
 # 프로젝트 회고
 
