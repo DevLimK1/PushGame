@@ -2,7 +2,7 @@
 
 #### [목차]
 
-[🐻PushBear Game🐼](#🐻PushBear Game🐼)
+[🐻PushBear Game🐼](#pushbear-game)
 
 🙋‍♂️[팀원 소개 및 역할](#%EF%B8%8F팀원-소개-및-역할)
 
